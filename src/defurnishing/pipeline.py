@@ -37,6 +37,11 @@ def run_pipeline(config: PipelineConfig) -> None:
     # 1. Environment & Dependency Discovery
     setup_dependencies()
 
+    if config.hf_key:
+        import os
+        os.environ["HF_TOKEN"] = config.hf_key
+        os.environ["HUGGING_FACE_HUB_TOKEN"] = config.hf_key
+
     if not config.input:
         raise ValueError("No input image or directory specified. Use --input <path>.")
 

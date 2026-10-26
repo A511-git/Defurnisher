@@ -41,13 +41,22 @@ def load_sam_model(config: SAMConfig) -> Tuple[Any, Any]:
     )
 
     # Authenticate with Hugging Face Hub if token is provided (for gated model access)
-    if config.hf_key:
+    import os
+    hf_token = config.hf_key or os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+    if hf_token:
+        os.environ["HF_TOKEN"] = hf_token
+        os.environ["HUGGING_FACE_HUB_TOKEN"] = hf_token
         try:
             from huggingface_hub import login
-            login(token=config.hf_key, add_to_git_credential=False)
+            login(token=hf_token, add_to_git_credential=False)
             logger.info("Authenticated with Hugging Face Hub.")
         except Exception as e:
             logger.debug(f"HF login notice: {e}")
+    else:
+        logger.warning(
+            "No Hugging Face token detected (--hf-key or $HF_TOKEN). "
+            "Gated models (e.g. facebook/sam3) require authentication."
+        )
 
     try:
         from sam3 import build_sam3_image_model
@@ -93,7 +102,17 @@ def load_sam_model(config: SAMConfig) -> Tuple[Any, Any]:
         )
         raise
     except Exception as e:
-        logger.error(f"Error initializing SAM 3 model: {e}")
+        err_msg = str(e)
+        if "401" in err_msg or "gated" in err_msg.lower() or "restricted" in err_msg.lower():
+            logger.error(
+                f"Failed to access gated model '{config.model_path}' (HTTP 401).\n"
+                "To resolve this:\n"
+                f"  1. Visit https://huggingface.co/{config.model_path} in your browser and accept the model license/terms.\n"
+                "  2. Make sure your Hugging Face User Access Token has 'Read' permission (https://huggingface.co/settings/tokens).\n"
+                "  3. Pass the token via --hf-key or set os.environ['HF_TOKEN']."
+            )
+        else:
+            logger.error(f"Error initializing SAM 3 model: {e}")
         raise
 
 
