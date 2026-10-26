@@ -1,0 +1,68 @@
+# ==============================================================================
+# Matterport Defurnishing Pipeline Configuration
+# ==============================================================================
+
+pipeline:
+  hf_key: ""                      # Hugging Face API key / token for downloading models (or set HF_TOKEN env var)
+  log_level: "INFO"               # DEBUG, INFO, WARNING, ERROR
+  stage: "all"                    # all, masks-only, inpaint-only
+  recursive: false                # Recursively search input directories
+  overwrite: false                # Overwrite existing outputs
+
+# --- SAM 3.1 Mask Generator Settings ---
+sam:
+  model_path: "facebook/sam3.1"
+  device: "cuda"
+  dtype: "bfloat16"               # bfloat16, float16, float32
+  refine: 3                       # Number of multi-pass refinement runs (1-5)
+  threshold: 0.40                 # Detection confidence cutoff
+  mask_dilate: 10                 # Pixels to dilate mask to cover contact shadows
+  prompts:
+    - "sofa"
+    - "couch"
+    - "chair"
+    - "armchair"
+    - "table"
+    - "coffee table"
+    - "bed"
+    - "nightstand"
+    - "desk"
+    - "cabinet"
+    - "wardrobe"
+    - "bookshelf"
+    - "tv stand"
+    - "dresser"
+    - "rug"
+    - "carpet"
+    - "lamp"
+  negative_prompts:
+    - "wall"
+    - "floor"
+    - "ceiling"
+    - "window"
+    - "door"
+    - "column"
+
+# --- Stable Diffusion Inpainting Settings ---
+sd:
+  model_path: "stable-diffusion-v1-5/stable-diffusion-inpainting"
+  device: "cuda"
+  dtype: "float16"                # float16, bfloat16, float32
+  scheduler: "dpm++"              # dpm++, euler_a, pndm, ddim
+  steps: 25                       # Denoising steps (20-25 for dpm++)
+  guidance_scale: 7.5
+  strength: 0.99
+  seed: 1234
+  attention_slicing: false        # Enable to cut VRAM on consumer GPUs
+  prompt: "empty unfurnished room interior, clean bare floor, clear walls, realistic indoor architecture, photorealistic, high resolution"
+  negative_prompt: "furniture, sofa, chair, table, bed, desk, cabinet, clutter, shadows, distorted walls, artifacts, text, watermark, blurry"
+
+# --- Geometry & Pre/Post-Processing ---
+geometry:
+  roll: true                      # Circular horizontal roll to center furniture
+  pad: true                       # Circular wrap-padding at 0°/360° seams
+  pad_ratio: 0.20                 # Fraction of width to pad on each side
+  target_height: 256              # Inpaint working height (aspect preserved, 512x256 default)
+  blend_feather: 6                # Pixel radius for boundary alpha feathering
+  output_format: "jpg"            # jpg or png
+  jpeg_quality: 95                # JPEG output quality (1-100)

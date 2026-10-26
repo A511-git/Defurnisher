@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "matterport-defurnishing"
+version = "0.1.0"
+description = "Matterport Panorama Defurnishing Pipeline based on CVPRW 2024 ('An Empty Room is All We Want')"
+requires-python = ">=3.11"
+authors = [
+    { name = "Matterport Defurnishing Pipeline Team" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Multimedia :: Graphics",
+]
+dependencies = [
+    # PyTorch & Diffusers Core
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "accelerate>=0.31.0",
+    "transformers>=4.41.2",
+    "huggingface_hub>=1.32.0,<3.0",
+    "requests",
+    "filelock",
+    "regex",
+    # Meta SAM 3 Dependencies
+    "timm>=1.0.17",
+    "iopath>=0.1.10",
+    "ftfy>=6.1.1",
+    "einops>=0.7.0",
+    "setuptools<80.0.0",
+    # Pipeline Processing & Formats
+    "opencv-python>=4.8.0",
+    "pycocotools>=2.0.7",
+    "numpy>=1.26.0,<2.0.0",
+    "Pillow>=10.0.0",
+    "PyYAML>=6.0",
+    "tqdm>=4.66.0",
+]
+
+[project.scripts]
+defurnish = "defurnishing.pipeline:cli_main"
+defurnishing-pipeline = "defurnishing.pipeline:cli_main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
