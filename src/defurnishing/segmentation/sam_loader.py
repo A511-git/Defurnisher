@@ -63,7 +63,7 @@ def load_sam_model(config: SAMConfig) -> Tuple[Any, Any]:
         from sam3.model.sam3_image_processor import Sam3Processor
 
         torch_dtype = get_torch_dtype(config.dtype)
-        device = torch.device(config.device if torch.cuda.is_available() or config.device == "cpu" else "cpu")
+        device = "cuda" if (torch.cuda.is_available() and config.device != "cpu") else "cpu"
 
         # Resolve local BPE vocabulary asset from dependencies/sam3
         bpe_path = get_sam3_bpe_path()
@@ -83,12 +83,14 @@ def load_sam_model(config: SAMConfig) -> Tuple[Any, Any]:
             version=version,
         )
 
-        if hasattr(model, "to") and config.device != "cpu":
-            # Autocast / dtype
+        # Explicitly ensure the entire model is on the target device
+        if hasattr(model, "to"):
             try:
-                model = model.to(dtype=torch_dtype)
+                model = model.to(device=device, dtype=torch_dtype)
+                logger.info(f"SAM 3 model successfully transferred to {device} ({torch_dtype}).")
             except Exception as e:
-                logger.debug(f"Model precision conversion note: {e}")
+                logger.debug(f"Device/precision transfer note: {e}")
+                model = model.to(device=device)
 
         # Instantiate native Sam3Processor
         processor = Sam3Processor(
