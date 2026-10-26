@@ -70,12 +70,17 @@ def load_sam_model(config: SAMConfig) -> Tuple[Any, Any]:
         if bpe_path:
             logger.debug(f"Using SAM 3 BPE tokenizer vocabulary from: {bpe_path}")
 
+        # Determine whether to load sam3.1 or sam3 based on config.model_path
+        version = "sam3.1" if "3.1" in str(config.model_path) else "sam3"
+        logger.info(f"Targeting SAM checkpoint version: '{version}' (repo: facebook/{version})")
+
         # Build native SAM 3 image model
         model = build_sam3_image_model(
             bpe_path=bpe_path,
             device=device,
             eval_mode=True,
             load_from_HF=True,
+            version=version,
         )
 
         if hasattr(model, "to") and config.device != "cpu":

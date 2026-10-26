@@ -579,6 +579,7 @@ def build_sam3_image_model(
     enable_segmentation=True,
     enable_inst_interactivity=False,
     compile=False,
+    version="sam3.1",
 ):
     """
     Build SAM3 image model
@@ -643,7 +644,7 @@ def build_sam3_image_model(
         eval_mode,
     )
     if load_from_HF and checkpoint_path is None:
-        checkpoint_path = download_ckpt_from_hf(version="sam3")
+        checkpoint_path = download_ckpt_from_hf(version=version)
     # Load checkpoint if provided
     if checkpoint_path is not None:
         _load_checkpoint(model, checkpoint_path)
