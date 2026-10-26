@@ -56,8 +56,11 @@ panos/
 *.bin
 *.safetensors
 *.onnx
-checkpoints/
-models/
+/checkpoints/
+/models/
+
+# Do not ignore anything in dependencies
+!dependencies/**
 
 # Secrets & Environment variables
 .env
