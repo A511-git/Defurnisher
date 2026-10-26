@@ -25,7 +25,11 @@ import requests
 import torch
 import yaml
 
-from ..models.modeling_utils import load_state_dict
+try:
+    from ..models.modeling_utils import load_state_dict
+except (ImportError, ModuleNotFoundError):
+    import diffusers.models
+    from diffusers.models.modeling_utils import load_state_dict
 from ..schedulers import (
     DDIMScheduler,
     DPMSolverMultistepScheduler,

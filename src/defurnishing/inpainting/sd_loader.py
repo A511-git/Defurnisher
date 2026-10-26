@@ -62,10 +62,11 @@ def load_sd_pipeline(config: SDConfig) -> Any:
     )
 
     try:
+        import diffusers.models
         from diffusers import StableDiffusionInpaintPipeline
 
         torch_dtype = get_torch_dtype(config.dtype)
-        device = torch.device(config.device if torch.cuda.is_available() or config.device == "cpu" else "cpu")
+        device = "cuda" if (torch.cuda.is_available() and config.device != "cpu") else "cpu"
 
         # Configure authentication token for gated model downloads if provided
         load_kwargs = {
