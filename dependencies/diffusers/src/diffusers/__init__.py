@@ -501,7 +501,6 @@ else:
             "VQDiffusionScheduler",
         ]
     )
-    _import_structure["training_utils"] = ["EMAModel"]
     _import_structure["video_processor"] = ["VideoProcessor"]
 
 try:
@@ -1418,7 +1417,6 @@ if TYPE_CHECKING or DIFFUSERS_SLOW_IMPORT:
             UniPCMultistepScheduler,
             VQDiffusionScheduler,
         )
-        from .training_utils import EMAModel
         from .video_processor import VideoProcessor
 
     try:

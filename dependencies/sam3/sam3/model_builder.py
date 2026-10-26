@@ -306,7 +306,6 @@ def _create_sam3_model(
     segmentation_head,
     dot_prod_scoring,
     inst_interactive_predictor,
-    eval_mode,
 ):
     """Create the SAM3 image model."""
     common_params = {
@@ -320,22 +319,8 @@ def _create_sam3_model(
         "use_instance_query": False,
         "multimask_output": True,
         "inst_interactive_predictor": inst_interactive_predictor,
+        "matcher": None,
     }
-
-    matcher = None
-    if not eval_mode:
-        from sam3.train.matcher import BinaryHungarianMatcherV2
-
-        matcher = BinaryHungarianMatcherV2(
-            focal=True,
-            cost_class=2.0,
-            cost_bbox=5.0,
-            cost_giou=2.0,
-            alpha=0.25,
-            gamma=2,
-            stable=False,
-        )
-    common_params["matcher"] = matcher
     model = Sam3Image(**common_params)
 
     return model
@@ -644,7 +629,6 @@ def build_sam3_image_model(
         segmentation_head,
         dot_prod_scoring,
         inst_predictor,
-        eval_mode,
     )
     if load_from_HF and checkpoint_path is None:
         checkpoint_path = download_ckpt_from_hf(version=version)

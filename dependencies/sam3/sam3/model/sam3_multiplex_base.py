@@ -25,7 +25,7 @@ from sam3.model.sam3_video_base import (
     Sam3VideoBase,
 )
 from sam3.perflib.masks_ops import mask_iou
-from sam3.train.masks_ops import rle_encode
+from sam3.model.masks_ops import rle_encode
 from torch import nn, Tensor
 
 # a short 3-min timeout to quickly detect any synchronization failures

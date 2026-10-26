@@ -19,7 +19,6 @@ import pytest
 import torch
 
 from diffusers.hooks import HookRegistry, ModelHook
-from diffusers.training_utils import free_memory
 from diffusers.utils.logging import get_logger
 
 from ..testing_utils import CaptureLogger, torch_device
@@ -154,7 +153,8 @@ class TestHooks:
     def teardown_method(self):
         del self.model
         gc.collect()
-        free_memory()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     def get_module_parameters(self):
         return {

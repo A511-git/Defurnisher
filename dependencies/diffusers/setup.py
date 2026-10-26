@@ -135,7 +135,6 @@ _deps = [
     "sdnq>=0.2.2",
     "regex!=2019.12.17",
     "requests",
-    "tensorboard",
     "tiktoken>=0.7.0",
     "torch>=2.6",
     "torchvision",
@@ -219,7 +218,6 @@ class DepsTableUpdateCommand(Command):
 extras = {}
 extras["quality"] = deps_list("urllib3", "isort", "ruff", "hf-doc-builder")
 extras["docs"] = deps_list("hf-doc-builder")
-extras["training"] = deps_list("accelerate", "datasets", "protobuf", "tensorboard", "Jinja2", "peft", "timm")
 extras["test"] = deps_list(
     "ftfy",
     "GitPython",
@@ -254,7 +252,7 @@ extras["nvidia_modelopt"] = deps_list("nvidia_modelopt[hf]")
 extras["sdnq"] = deps_list("sdnq")
 extras["flashpack"] = deps_list("flashpack")
 
-extras["dev"] = extras["quality"] + extras["test"] + extras["training"] + extras["docs"] + extras["torch"]
+extras["dev"] = extras["quality"] + extras["test"] + extras["docs"] + extras["torch"]
 
 install_requires = [
     deps["importlib_metadata"],

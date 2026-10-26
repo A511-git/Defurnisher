@@ -83,14 +83,10 @@ def load_sam_model(config: SAMConfig) -> Tuple[Any, Any]:
             version=version,
         )
 
-        # Explicitly ensure the entire model is on the target device
+        # Explicitly ensure the entire model is on the target device in native precision
         if hasattr(model, "to"):
-            try:
-                model = model.to(device=device, dtype=torch_dtype)
-                logger.info(f"SAM 3 model successfully transferred to {device} ({torch_dtype}).")
-            except Exception as e:
-                logger.debug(f"Device/precision transfer note: {e}")
-                model = model.to(device=device)
+            model = model.to(device=device)
+            logger.info(f"SAM 3 model successfully transferred to {device}.")
 
         # Instantiate native Sam3Processor
         processor = Sam3Processor(

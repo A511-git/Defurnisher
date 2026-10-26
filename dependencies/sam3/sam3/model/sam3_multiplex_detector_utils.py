@@ -15,7 +15,7 @@ except ImportError:
     GENERIC_NMS_AVAILABLE = False
 
 from sam3.perflib.masks_ops import mask_iou
-from sam3.train.masks_ops import mask_iom
+from sam3.model.masks_ops import mask_iom
 
 
 def nms_masks(

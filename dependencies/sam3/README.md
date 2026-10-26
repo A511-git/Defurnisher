@@ -99,7 +99,7 @@ pip install -e .
 pip install -e ".[notebooks]"
 
 # For development
-pip install -e ".[train,dev]"
+pip install -e ".[dev]"
 ```
 
 5. **Optional dependencies for faster inference**
@@ -344,23 +344,12 @@ architecture, supporting video segmentation and interactive refinement.
 </table>
 </div>
 
-## SA-Co Dataset
-
-We release 2 image benchmarks, [SA-Co/Gold](scripts/eval/gold/README.md) and
-[SA-Co/Silver](scripts/eval/silver/README.md), and a video benchmark
-[SA-Co/VEval](scripts/eval/veval/README.md). The datasets contain images (or videos) with annotated noun phrases. Each image/video and noun phrase pair is annotated with instance masks and unique IDs of each object matching the phrase. Phrases that have no matching objects (negative prompts) have no masks, shown in red font in the figure. See the linked READMEs for more details on how to download and run evaluations on the datasets.
-
-* HuggingFace host: [SA-Co/Gold](https://huggingface.co/datasets/facebook/SACo-Gold), [SA-Co/Silver](https://huggingface.co/datasets/facebook/SACo-Silver) and [SA-Co/VEval](https://huggingface.co/datasets/facebook/SACo-VEval)
-* Roboflow host: [SA-Co/Gold](https://universe.roboflow.com/sa-co-gold), [SA-Co/Silver](https://universe.roboflow.com/sa-co-silver) and [SA-Co/VEval](https://universe.roboflow.com/sa-co-veval)
-
-![SA-Co dataset](assets/sa_co_dataset.jpg?raw=true)
-
 ## Development
 
 To set up the development environment:
 
 ```bash
-pip install -e ".[dev,train]"
+pip install -e ".[dev]"
 ```
 
 To format the code:

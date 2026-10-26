@@ -65,18 +65,6 @@ notebooks = [
     "scikit-image",
     "scikit-learn",
 ]
-train = [
-    "hydra-core",
-    "submitit",
-    "tensorboard",
-    "zstandard",
-    "scipy",
-    "torchmetrics",
-    "fvcore",
-    "fairscale",
-    "scikit-image",
-    "scikit-learn",
-]
 
 [project.urls]
 "Homepage" = "https://github.com/facebookresearch/sam3"

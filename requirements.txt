@@ -3,6 +3,7 @@
 # PyTorch & Diffusers Core
 torch>=2.0.0
 torchvision>=0.15.0
+# Used by diffusers to load and place weights (not for training)
 accelerate>=0.31.0
 transformers>=4.41.2
 huggingface_hub>=1.32.0,<3.0

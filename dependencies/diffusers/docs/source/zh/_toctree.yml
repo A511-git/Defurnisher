@@ -91,34 +91,6 @@
   - local: modular_diffusers/components_manager
     title: ComponentsManager
 
-- title: Training
-  isExpanded: false
-  sections:
-  - local: training/overview
-    title: Overview
-  - local: training/adapt_a_model
-    title: Adapt a model to a new task
-  - local: tutorials/basic_training
-    title: 训练扩散模型
-  - title: Models
-    sections:
-    - local: training/text2image
-      title: Text-to-image
-    - local: training/kandinsky
-      title: Kandinsky 2.2
-    - local: training/controlnet
-      title: ControlNet
-    - local: training/instructpix2pix
-      title: InstructPix2Pix
-  - title: Methods
-    sections:
-    - local: training/text_inversion
-      title: Textual Inversion
-    - local: training/dreambooth
-      title: DreamBooth
-    - local: training/lora
-      title: LoRA
-
 - title: Model accelerators and hardware
   isExpanded: false
   sections:
