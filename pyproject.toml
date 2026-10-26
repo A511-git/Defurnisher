@@ -34,8 +34,7 @@ dependencies = [
     "setuptools<80.0.0",
     # Pipeline Processing & Formats
     "opencv-python>=4.8.0",
-    "pycocotools>=2.0.7",
-    "numpy>=1.26.0,<2.0.0",
+    "numpy>=1.26.0",
     "Pillow>=10.0.0",
     "PyYAML>=6.0",
     "tqdm>=4.66.0",

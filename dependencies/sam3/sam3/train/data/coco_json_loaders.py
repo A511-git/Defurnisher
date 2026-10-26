@@ -7,7 +7,10 @@ from collections import defaultdict
 from typing import Dict, List, Tuple
 
 import torch
-from pycocotools import mask as mask_util
+try:
+    from pycocotools import mask as mask_util
+except (ImportError, ModuleNotFoundError):
+    mask_util = None
 
 
 # ============================================================================
