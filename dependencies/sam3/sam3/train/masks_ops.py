@@ -5,9 +5,13 @@
 """Utilities for masks manipulation"""
 
 import numpy as np
-import pycocotools.mask as maskUtils
 import torch
-from pycocotools import mask as mask_util
+try:
+    import pycocotools.mask as maskUtils
+    from pycocotools import mask as mask_util
+except (ImportError, ModuleNotFoundError):
+    maskUtils = None
+    mask_util = None
 
 
 def instance_masks_to_semantic_masks(

@@ -3,7 +3,10 @@
 # pyre-unsafe
 
 import numpy as np
-import pycocotools.mask as mask_utils
+try:
+    import pycocotools.mask as mask_utils
+except (ImportError, ModuleNotFoundError):
+    mask_utils = None
 import torch
 import torchvision.transforms.functional as F
 from PIL import Image as PILImage

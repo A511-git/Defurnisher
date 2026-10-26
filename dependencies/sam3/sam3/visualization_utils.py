@@ -11,7 +11,10 @@ import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pycocotools.mask as mask_utils
+try:
+    import pycocotools.mask as mask_utils
+except (ImportError, ModuleNotFoundError):
+    mask_utils = None
 import torch
 from matplotlib.colors import to_rgb
 from PIL import Image
