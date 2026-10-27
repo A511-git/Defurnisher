@@ -32,7 +32,6 @@ sam:
     - "tv stand"
     - "dresser"
     - "rug"
-    - "carpet"
     - "lamp"
     - "television"
     - "mirror"
@@ -46,6 +45,18 @@ sam:
     - "kettle"
     - "tray"
     - "bottle"
+    - "book"
+    - "flyers"
+    - "bookshelf"
+    - "bucket"
+    - "dustbin"
+    - "tray"
+    - "cups"
+    - "mugs"
+    - "spoons"
+    - "forks"
+    - "knives"
+    - "glasses"
   skip_prompts: []                # Prompts to save individually but exclude from final union mask
 
 # --- Stable Diffusion Inpainting Settings ---
