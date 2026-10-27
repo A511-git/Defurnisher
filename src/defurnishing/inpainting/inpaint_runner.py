@@ -38,6 +38,7 @@ def run_inpaint_inference(
     # Convert to PIL Image
     pil_image = Image.fromarray(image_prepared).convert("RGB")
     pil_mask = Image.fromarray(mask_prepared).convert("L")
+    inpaint_h, inpaint_w = image_prepared.shape[:2]
 
     device = next(pipe.unet.parameters()).device
     generator = None
@@ -51,6 +52,9 @@ def run_inpaint_inference(
             negative_prompt=config.negative_prompt,
             image=pil_image,
             mask_image=pil_mask,
+            height=inpaint_h,
+            width=inpaint_w,
+            strength=config.strength,
             num_inference_steps=config.steps,
             guidance_scale=config.guidance_scale,
             generator=generator,
