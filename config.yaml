@@ -57,6 +57,11 @@ sam:
     - "forks"
     - "knives"
     - "glasses"
+    - "towel"
+    - "fan"
+    - "air conditioner"
+    - "AC"
+    - "ceiling fan"
   skip_prompts: []                # Prompts to save individually but exclude from final union mask
 
 # --- Stable Diffusion Inpainting Settings ---
