@@ -23,6 +23,7 @@ class TestConfigLoader(unittest.TestCase):
         self.assertIn(config.log_level, ["DEBUG", "INFO", "WARNING", "ERROR"])
         self.assertEqual(config.sam.skip_prompts, [])
         self.assertEqual(config.sd.scheduler, "dpm++")
+        self.assertEqual(config.geometry.target_height, 512)
 
     def test_cli_overrides(self):
         """Verifies CLI arguments override configuration file defaults."""

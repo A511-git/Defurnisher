@@ -51,7 +51,7 @@ class GeometryConfig:
     roll: bool = True
     pad: bool = True
     pad_ratio: float = 0.20
-    target_height: int = 256
+    target_height: int = 512
     blend_feather: int = 6
     output_format: str = "jpg"
     jpeg_quality: int = 95

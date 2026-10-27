@@ -11,7 +11,7 @@ import numpy as np
 def compute_inpaint_dimensions(
     current_w: int,
     current_h: int,
-    target_height: int = 256,
+    target_height: int = 512,
 ) -> Tuple[int, int]:
     """
     Computes scaled (width, height) preserving aspect ratio, ensuring both are multiples of 8.
