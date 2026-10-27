@@ -5,8 +5,8 @@ Usage:
     # Direct hit using defaults from config.yaml:
     python run_pipeline.py --input ./panos --output ./output
 
-    # With custom log level and SAM refinement passes:
-    python run_pipeline.py --input ./panos --output ./output --log-level DEBUG --sam-refine 4
+    # With custom log level and skipped prompt:
+    python run_pipeline.py --input ./panos --output ./output --log-level DEBUG --sam-skip-prompt bed
 
     # Run masks-only or inpaint-only:
     python run_pipeline.py --input ./panos --output ./output --stage masks-only

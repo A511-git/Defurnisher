@@ -1,9 +1,10 @@
 """
-Multi-pass refinement and negative prompt subtraction for robust furniture segmentation.
+SAM 3 segmentation with per-prompt mask extraction.
 Utilizes native Meta SAM 3 image caching and text grounding.
 """
 
 from pathlib import Path
+import re
 from typing import Any, List
 import cv2
 import numpy as np
@@ -11,6 +12,16 @@ from PIL import Image
 
 from ..config.schema import SAMConfig
 from ..core.logger import get_logger
+
+
+def sanitize_prompt_filename(prompt: str) -> str:
+    """
+    Sanitizes prompt string into a safe filename (e.g. 'coffee table' -> 'coffee_table').
+    """
+    clean = prompt.strip().lower()
+    clean = re.sub(r"\s+", "_", clean)
+    clean = re.sub(r"[^\w\-]", "", clean)
+    return clean or "unnamed_mask"
 
 
 def extract_binary_mask_from_state(state: dict, height: int, width: int) -> np.ndarray:
@@ -40,51 +51,6 @@ def extract_binary_mask_from_state(state: dict, height: int, width: int) -> np.n
     return combined
 
 
-def run_inference_pass_native(
-    processor: Any,
-    state: dict,
-    prompts: List[str],
-    negative_prompts: List[str],
-    threshold: float,
-    height: int,
-    width: int,
-) -> np.ndarray:
-    """
-    Runs text grounding queries against the cached image state using native Sam3Processor.
-    """
-    logger = get_logger()
-    pos_mask = np.zeros((height, width), dtype=np.uint8)
-    neg_mask = np.zeros((height, width), dtype=np.uint8)
-
-    # Set confidence threshold for this pass
-    if hasattr(processor, "set_confidence_threshold"):
-        processor.set_confidence_threshold(threshold, state)
-
-    # 1. Query positive furniture concepts
-    for prompt in prompts:
-        try:
-            state = processor.set_text_prompt(prompt, state)
-            prompt_mask = extract_binary_mask_from_state(state, height, width)
-            pos_mask = cv2.bitwise_or(pos_mask, prompt_mask)
-            processor.reset_all_prompts(state)
-        except Exception as e:
-            logger.debug(f"SAM 3 text prompt '{prompt}' query notice: {e}")
-
-    # 2. Query negative structural concepts (walls, floors, ceilings)
-    for neg_prompt in negative_prompts:
-        try:
-            state = processor.set_text_prompt(neg_prompt, state)
-            prompt_mask = extract_binary_mask_from_state(state, height, width)
-            neg_mask = cv2.bitwise_or(neg_mask, prompt_mask)
-            processor.reset_all_prompts(state)
-        except Exception as e:
-            logger.debug(f"SAM 3 negative prompt '{neg_prompt}' query notice: {e}")
-
-    # 3. Negative prompt subtraction: Pos AND NOT Neg
-    cleaned_mask = cv2.bitwise_and(pos_mask, cv2.bitwise_not(neg_mask))
-    return cleaned_mask
-
-
 def run_multi_pass_segmentation(
     model: Any,
     processor: Any,
@@ -93,62 +59,60 @@ def run_multi_pass_segmentation(
     config: SAMConfig,
 ) -> np.ndarray:
     """
-    Runs multi-pass refinement (--sam-refine passes) using native SAM 3:
+    Runs SAM 3 text-grounded segmentation for all configured furniture prompts:
     1. Encodes the image once via processor.set_image(image_pil).
-    2. Runs pass 1: Primary furniture prompts.
-    3. Runs pass 2: Secondary furniture & decor prompts.
-    4. Runs pass 3+: Sensitive passes with reduced threshold.
-    5. Subtracts negative prompt masks and computes boolean union.
+    2. Sets confidence threshold once on the cached state.
+    3. Queries each prompt in config.prompts individually.
+    4. Extracts and saves individual binary masks (e.g. chair.png, bed.png).
+    5. Computes boolean union mask, excluding prompts specified in config.skip_prompts.
 
     Returns:
         Unified binary mask (H, W) uint8 {0, 255}.
     """
     logger = get_logger()
-    logger.info(f"Starting native SAM 3 segmentation for: {image_path.name} ({config.refine} passes)")
+    logger.info(f"Starting SAM 3 segmentation for: {image_path.name} ({len(config.prompts)} prompts)")
+
+    masks_output_dir.mkdir(parents=True, exist_ok=True)
 
     image_pil = Image.open(image_path).convert("RGB")
     width, height = image_pil.size
     union_mask = np.zeros((height, width), dtype=np.uint8)
 
+    # Prepare normalized set of skipped prompts
+    skip_set = {p.strip().lower() for p in (config.skip_prompts or [])}
+
     # Cache image in processor (visual backbone runs ONCE)
     state = processor.set_image(image_pil)
 
-    # Partition prompts for multi-pass strategy
-    mid = max(1, len(config.prompts) // 2)
-    primary_prompts = config.prompts[:mid]
-    secondary_prompts = config.prompts[mid:] if len(config.prompts) > mid else config.prompts
+    # Set confidence cutoff
+    if hasattr(processor, "set_confidence_threshold"):
+        processor.set_confidence_threshold(config.threshold, state)
+
+    # Deduplicate prompts preserving order
+    unique_prompts = list(dict.fromkeys(config.prompts))
 
     try:
-        for pass_idx in range(1, config.refine + 1):
-            if pass_idx == 1:
-                current_prompts = primary_prompts
-                current_thresh = config.threshold
-            elif pass_idx == 2:
-                current_prompts = secondary_prompts
-                current_thresh = config.threshold
+        for prompt in unique_prompts:
+            clean_name = sanitize_prompt_filename(prompt)
+            prompt_mask = np.zeros((height, width), dtype=np.uint8)
+
+            try:
+                state = processor.set_text_prompt(prompt, state)
+                prompt_mask = extract_binary_mask_from_state(state, height, width)
+                processor.reset_all_prompts(state)
+            except Exception as e:
+                logger.debug(f"SAM 3 text prompt '{prompt}' query notice: {e}")
+
+            # Save individual prompt mask (e.g. chair.png, bed.png)
+            mask_filename = masks_output_dir / f"{clean_name}.png"
+            cv2.imwrite(str(mask_filename), prompt_mask)
+
+            # Check if this prompt should be excluded from final union
+            prompt_norm = prompt.strip().lower()
+            if prompt_norm in skip_set or clean_name in skip_set:
+                logger.info(f"Saved mask '{clean_name}.png', excluded from final union (--sam-skip-prompt)")
             else:
-                # Sensitive pass: all prompts with lower threshold (-0.10) to catch distant items
-                current_prompts = config.prompts
-                current_thresh = max(0.15, config.threshold - 0.10)
-
-            logger.debug(f"Pass {pass_idx}/{config.refine}: threshold={current_thresh:.2f}, {len(current_prompts)} prompts")
-
-            pass_mask = run_inference_pass_native(
-                processor=processor,
-                state=state,
-                prompts=current_prompts,
-                negative_prompts=config.negative_prompts,
-                threshold=current_thresh,
-                height=height,
-                width=width,
-            )
-
-            # Save individual run mask
-            pass_filename = masks_output_dir / f"run_{pass_idx}.png"
-            cv2.imwrite(str(pass_filename), pass_mask)
-
-            # Boolean union
-            union_mask = cv2.bitwise_or(union_mask, pass_mask)
+                union_mask = cv2.bitwise_or(union_mask, prompt_mask)
 
     finally:
         # Free processor image state
@@ -156,5 +120,5 @@ def run_multi_pass_segmentation(
             processor.reset_all_prompts(state)
         del state
 
-    logger.info(f"Completed {config.refine} native SAM 3 passes for {image_path.name}.")
+    logger.info(f"Completed SAM 3 segmentation for {image_path.name}.")
     return union_mask

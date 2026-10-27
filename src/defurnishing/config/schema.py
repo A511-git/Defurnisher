@@ -11,18 +11,17 @@ class SAMConfig:
     model_path: str = "facebook/sam3.1"
     device: str = "cuda"
     dtype: str = "bfloat16"
-    refine: int = 3
     threshold: float = 0.40
     mask_dilate: int = 10
     hf_key: str = ""
     prompts: List[str] = field(default_factory=lambda: [
         "sofa", "couch", "chair", "armchair", "table", "coffee table",
         "bed", "nightstand", "desk", "cabinet", "wardrobe", "bookshelf",
-        "tv stand", "dresser", "rug", "carpet", "lamp"
+        "tv stand", "dresser", "rug", "carpet", "lamp",
+        "television", "mirror", "picture frame", "curtain", "luggage rack",
+        "trash can", "telephone", "sconce", "pillow", "kettle", "tray", "bottle"
     ])
-    negative_prompts: List[str] = field(default_factory=lambda: [
-        "wall", "floor", "ceiling", "window", "door", "column"
-    ])
+    skip_prompts: List[str] = field(default_factory=list)
 
 
 @dataclass

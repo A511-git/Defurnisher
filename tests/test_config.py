@@ -21,7 +21,7 @@ class TestConfigLoader(unittest.TestCase):
         self.assertEqual(config.input, "dummy.jpg")
         self.assertEqual(config.stage, "all")
         self.assertIn(config.log_level, ["DEBUG", "INFO", "WARNING", "ERROR"])
-        self.assertEqual(config.sam.refine, 3)
+        self.assertEqual(config.sam.skip_prompts, [])
         self.assertEqual(config.sd.scheduler, "dpm++")
 
     def test_cli_overrides(self):
@@ -31,8 +31,9 @@ class TestConfigLoader(unittest.TestCase):
             "--output", "custom_output",
             "--log-level", "DEBUG",
             "--stage", "masks-only",
-            "--sam-refine", "5",
             "--sam-dtype", "float16",
+            "--sam-skip-prompt", "bed",
+            "--sam-skip-prompt", "sofa",
             "--sd-steps", "40",
             "--no-roll",
             "--no-pad",
@@ -43,8 +44,8 @@ class TestConfigLoader(unittest.TestCase):
         self.assertEqual(config.output, "custom_output")
         self.assertEqual(config.log_level, "DEBUG")
         self.assertEqual(config.stage, "masks-only")
-        self.assertEqual(config.sam.refine, 5)
         self.assertEqual(config.sam.dtype, "float16")
+        self.assertEqual(config.sam.skip_prompts, ["bed", "sofa"])
         self.assertEqual(config.sd.steps, 40)
         self.assertFalse(config.geometry.roll)
         self.assertFalse(config.geometry.pad)

@@ -14,7 +14,6 @@ sam:
   model_path: "facebook/sam3.1"
   device: "cuda"
   dtype: "bfloat16"               # bfloat16, float16, float32
-  refine: 3                       # Number of multi-pass refinement runs (1-5)
   threshold: 0.40                 # Detection confidence cutoff
   mask_dilate: 10                 # Pixels to dilate mask to cover contact shadows
   prompts:
@@ -35,13 +34,19 @@ sam:
     - "rug"
     - "carpet"
     - "lamp"
-  negative_prompts:
-    - "wall"
-    - "floor"
-    - "ceiling"
-    - "window"
-    - "door"
-    - "column"
+    - "television"
+    - "mirror"
+    - "picture frame"
+    - "curtain"
+    - "luggage rack"
+    - "trash can"
+    - "telephone"
+    - "sconce"
+    - "pillow"
+    - "kettle"
+    - "tray"
+    - "bottle"
+  skip_prompts: []                # Prompts to save individually but exclude from final union mask
 
 # --- Stable Diffusion Inpainting Settings ---
 sd:

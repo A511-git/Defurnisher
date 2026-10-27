@@ -80,10 +80,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Torch dtype for SAM 3.1."
     )
     sam_grp.add_argument(
-        "--sam-refine", type=int, choices=[1, 2, 3, 4, 5], default=None,
-        help="Number of multi-pass refinement runs to prevent missed furniture."
-    )
-    sam_grp.add_argument(
         "--sam-threshold", type=float, default=None,
         help="Confidence cutoff for SAM detection."
     )
@@ -96,8 +92,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Furniture prompt to segment. Repeatable for multiple prompts."
     )
     sam_grp.add_argument(
-        "--sam-negative-prompt", action="append", default=None,
-        help="Negative structural prompt to exclude (e.g. wall, floor)."
+        "--sam-skip-prompt", action="append", default=None,
+        help="Prompt to segment and save separately, but exclude from final union mask. Repeatable."
     )
 
     # Stable Diffusion Inpainting Options
@@ -227,16 +223,14 @@ def load_config_and_args(args_list: Optional[List[str]] = None) -> PipelineConfi
             sam_cfg.device = str(s_data["device"])
         if "dtype" in s_data:
             sam_cfg.dtype = str(s_data["dtype"])
-        if "refine" in s_data:
-            sam_cfg.refine = int(s_data["refine"])
         if "threshold" in s_data:
             sam_cfg.threshold = float(s_data["threshold"])
         if "mask_dilate" in s_data:
             sam_cfg.mask_dilate = int(s_data["mask_dilate"])
         if "prompts" in s_data and isinstance(s_data["prompts"], list):
             sam_cfg.prompts = [str(p) for p in s_data["prompts"]]
-        if "negative_prompts" in s_data and isinstance(s_data["negative_prompts"], list):
-            sam_cfg.negative_prompts = [str(p) for p in s_data["negative_prompts"]]
+        if "skip_prompts" in s_data and isinstance(s_data["skip_prompts"], list):
+            sam_cfg.skip_prompts = [str(p) for p in s_data["skip_prompts"]]
 
     # Merge YAML 'sd' section
     if "sd" in yaml_data:
@@ -312,16 +306,14 @@ def load_config_and_args(args_list: Optional[List[str]] = None) -> PipelineConfi
         sam_cfg.device = parsed_args.sam_device
     if parsed_args.sam_dtype is not None:
         sam_cfg.dtype = parsed_args.sam_dtype
-    if parsed_args.sam_refine is not None:
-        sam_cfg.refine = parsed_args.sam_refine
     if parsed_args.sam_threshold is not None:
         sam_cfg.threshold = parsed_args.sam_threshold
     if parsed_args.mask_dilate is not None:
         sam_cfg.mask_dilate = parsed_args.mask_dilate
     if parsed_args.sam_prompt is not None:
         sam_cfg.prompts = parsed_args.sam_prompt
-    if parsed_args.sam_negative_prompt is not None:
-        sam_cfg.negative_prompts = parsed_args.sam_negative_prompt
+    if parsed_args.sam_skip_prompt is not None:
+        sam_cfg.skip_prompts = parsed_args.sam_skip_prompt
 
     # SD overrides
     if parsed_args.sd_model_path is not None:
