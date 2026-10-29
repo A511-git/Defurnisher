@@ -32,17 +32,21 @@ class SDConfig:
     scheduler: str = "dpm++"
     steps: int = 25
     guidance_scale: float = 7.5
-    strength: float = 0.99
+    strength: float = 1.0
     seed: int = 1234
     attention_slicing: bool = False
     hf_key: str = ""
     prompt: str = (
-        "empty unfurnished room interior, clean bare floor, clear walls, "
-        "realistic indoor architecture, photorealistic, high resolution"
+        "completely empty vacant room interior, continuous clean bare floor, "
+        "seamless bare flooring, empty walls, clean room corners and baseboards, "
+        "raw architectural shell, realistic interior architecture photography, 8k, sharp focus"
     )
     negative_prompt: str = (
-        "furniture, sofa, chair, table, bed, desk, cabinet, clutter, "
-        "shadows, distorted walls, artifacts, text, watermark, blurry"
+        "furniture, bed, mattress, headboard, bedding, pillows, bathtub, boat, "
+        "sofa, couch, chair, bench, table, desk, nightstand, cabinet, wardrobe, "
+        "rug, carpet, mat, decor, lamp, appliances, clutter, shadows of removed objects, "
+        "floating objects, platform, steps, altered architecture, distorted perspective, "
+        "blurry, artifacts, lowres, watermark"
     )
 
 
@@ -51,7 +55,7 @@ class GeometryConfig:
     roll: bool = True
     pad: bool = True
     pad_ratio: float = 0.20
-    target_height: int = 512
+    target_height: int = 256
     blend_feather: int = 6
     output_format: str = "jpg"
     jpeg_quality: int = 95

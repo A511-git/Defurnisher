@@ -85,7 +85,7 @@ geometry:
   roll: true                      # Circular horizontal roll to center furniture
   pad: true                       # Circular wrap-padding at 0°/360° seams
   pad_ratio: 0.20                 # Fraction of width to pad on each side
-  target_height: 512              # Inpaint working height (aspect preserved, width mult of 8)
+  target_height: 256              # Inpaint working height (aspect preserved, width mult of 8)
   blend_feather: 6                # Pixel radius for boundary alpha feathering
   output_format: "jpg"            # jpg or png
   jpeg_quality: 95                # JPEG output quality (1-100)
