@@ -62,10 +62,16 @@ class GeometryConfig:
 
 
 @dataclass
+class CubemapConfig:
+    face_size: int = 512
+
+
+@dataclass
 class PipelineConfig:
     input: str = ""
     output: str = "./output"
     config_path: str = "config.yaml"
+    projection: str = "cubemap"   # 'cubemap' or 'equirectangular'
     stage: str = "all"            # 'all', 'masks-only', 'inpaint-only'
     log_level: str = "INFO"       # 'DEBUG', 'INFO', 'WARNING', 'ERROR'
     hf_key: str = ""              # Hugging Face API token / key
@@ -74,3 +80,4 @@ class PipelineConfig:
     sam: SAMConfig = field(default_factory=SAMConfig)
     sd: SDConfig = field(default_factory=SDConfig)
     geometry: GeometryConfig = field(default_factory=GeometryConfig)
+    cubemap: CubemapConfig = field(default_factory=CubemapConfig)

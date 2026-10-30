@@ -20,10 +20,12 @@ class TestConfigLoader(unittest.TestCase):
         config = load_config_and_args(args_list=["--input", "dummy.jpg"])
         self.assertEqual(config.input, "dummy.jpg")
         self.assertEqual(config.stage, "all")
+        self.assertEqual(config.projection, "cubemap")
+        self.assertEqual(config.cubemap.face_size, 512)
         self.assertIn(config.log_level, ["DEBUG", "INFO", "WARNING", "ERROR"])
         self.assertEqual(config.sam.skip_prompts, [])
         self.assertEqual(config.sd.scheduler, "dpm++")
-        self.assertEqual(config.geometry.target_height, 512)
+        self.assertEqual(config.geometry.target_height, 256)
 
     def test_cli_overrides(self):
         """Verifies CLI arguments override configuration file defaults."""
@@ -32,6 +34,8 @@ class TestConfigLoader(unittest.TestCase):
             "--output", "custom_output",
             "--log-level", "DEBUG",
             "--stage", "masks-only",
+            "--projection", "equirectangular",
+            "--cube-face-size", "768",
             "--sam-dtype", "float16",
             "--sam-skip-prompt", "bed",
             "--sam-skip-prompt", "sofa",
@@ -45,6 +49,8 @@ class TestConfigLoader(unittest.TestCase):
         self.assertEqual(config.output, "custom_output")
         self.assertEqual(config.log_level, "DEBUG")
         self.assertEqual(config.stage, "masks-only")
+        self.assertEqual(config.projection, "equirectangular")
+        self.assertEqual(config.cubemap.face_size, 768)
         self.assertEqual(config.sam.dtype, "float16")
         self.assertEqual(config.sam.skip_prompts, ["bed", "sofa"])
         self.assertEqual(config.sd.steps, 40)

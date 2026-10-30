@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
-from .schema import GeometryConfig, PipelineConfig, SAMConfig, SDConfig
+from .schema import CubemapConfig, GeometryConfig, PipelineConfig, SAMConfig, SDConfig
 
 
 def load_yaml_config(config_path: Path) -> Dict[str, Any]:
@@ -47,6 +47,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
     gen.add_argument(
         "--stage", type=str, choices=["all", "masks-only", "inpaint-only"], default=None,
         help="Execution stage."
+    )
+    gen.add_argument(
+        "--projection", type=str, choices=["cubemap", "equirectangular"], default=None,
+        help="Inpainting projection mode: 'cubemap' (rectilinear perspective faces) or 'equirectangular' (Matterport roll/wrap-pad)."
     )
     gen.add_argument(
         "--log-level", type=str, choices=["DEBUG", "INFO", "WARNING", "ERROR"], default=None,
@@ -143,6 +147,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Negative prompt discouraging furniture and artifacts."
     )
 
+    # Cubemap Projection Options
+    cube_grp = parser.add_argument_group("Cubemap Projection Options (--cube-*)")
+    cube_grp.add_argument(
+        "--cube-face-size", type=int, default=None,
+        help="Resolution of each square cube face (e.g. 512, 768, 1024; multiple of 8)."
+    )
+
     # Geometry & Blending Options
     geom_grp = parser.add_argument_group("Geometry & Blending Options")
     geom_grp.add_argument(
@@ -190,6 +201,7 @@ def load_config_and_args(args_list: Optional[List[str]] = None) -> PipelineConfi
     sam_cfg = SAMConfig()
     sd_cfg = SDConfig()
     geom_cfg = GeometryConfig()
+    cube_cfg = CubemapConfig()
 
     # Initial fallback from environment variables
     env_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN") or ""
@@ -209,10 +221,18 @@ def load_config_and_args(args_list: Optional[List[str]] = None) -> PipelineConfi
             pipeline_cfg.log_level = p_data["log_level"]
         if "stage" in p_data:
             pipeline_cfg.stage = p_data["stage"]
+        if "projection" in p_data:
+            pipeline_cfg.projection = str(p_data["projection"])
         if "recursive" in p_data:
             pipeline_cfg.recursive = bool(p_data["recursive"])
         if "overwrite" in p_data:
             pipeline_cfg.overwrite = bool(p_data["overwrite"])
+
+    # Merge YAML 'cubemap' section
+    if "cubemap" in yaml_data:
+        c_data = yaml_data["cubemap"]
+        if "face_size" in c_data:
+            cube_cfg.face_size = int(c_data["face_size"])
 
     # Merge YAML 'sam' section
     if "sam" in yaml_data:
@@ -283,6 +303,8 @@ def load_config_and_args(args_list: Optional[List[str]] = None) -> PipelineConfi
         pipeline_cfg.output = parsed_args.output
     if parsed_args.stage is not None:
         pipeline_cfg.stage = parsed_args.stage
+    if parsed_args.projection is not None:
+        pipeline_cfg.projection = parsed_args.projection
     if parsed_args.log_level is not None:
         pipeline_cfg.log_level = parsed_args.log_level
     if parsed_args.hf_key is not None:
@@ -355,8 +377,13 @@ def load_config_and_args(args_list: Optional[List[str]] = None) -> PipelineConfi
     if parsed_args.jpeg_quality is not None:
         geom_cfg.jpeg_quality = parsed_args.jpeg_quality
 
+    # Cubemap overrides
+    if parsed_args.cube_face_size is not None:
+        cube_cfg.face_size = parsed_args.cube_face_size
+
     pipeline_cfg.sam = sam_cfg
     pipeline_cfg.sd = sd_cfg
     pipeline_cfg.geometry = geom_cfg
+    pipeline_cfg.cubemap = cube_cfg
 
     return pipeline_cfg

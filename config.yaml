@@ -6,6 +6,7 @@ pipeline:
   hf_key: ""                      # Hugging Face API key / token for downloading models (or set HF_TOKEN env var)
   log_level: "INFO"               # DEBUG, INFO, WARNING, ERROR
   stage: "all"                    # all, masks-only, inpaint-only
+  projection: "cubemap"           # cubemap, equirectangular
   recursive: false                # Recursively search input directories
   overwrite: false                # Overwrite existing outputs
 
@@ -79,6 +80,10 @@ sd:
   attention_slicing: false        # Enable to cut VRAM on consumer GPUs
   prompt: "completely empty vacant room interior, continuous clean bare floor, seamless bare flooring, empty walls, clean room corners and baseboards, raw architectural shell, realistic interior architecture photography, 8k, sharp focus"
   negative_prompt: "furniture, bed, mattress, headboard, bedding, pillows, bathtub, boat, sofa, couch, chair, bench, table, desk, nightstand, cabinet, wardrobe, rug, carpet, mat, decor, lamp, appliances, clutter, shadows of removed objects, floating objects, platform, steps, altered architecture, distorted perspective, blurry, artifacts, lowres, watermark"
+
+# --- Cubemap Perspective Settings ---
+cubemap:
+  face_size: 512                  # Working resolution per square cube face (e.g. 512, 768, 1024)
 
 # --- Geometry & Pre/Post-Processing ---
 geometry:

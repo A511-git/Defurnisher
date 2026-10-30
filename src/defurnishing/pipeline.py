@@ -14,7 +14,15 @@ from .config.schema import PipelineConfig
 from .core.env_setup import setup_dependencies
 from .core.logger import get_logger, setup_logger
 from .core.path_manager import JobPaths, discover_jobs
-from .geometry import forward_geometry, inverse_geometry
+from .geometry import (
+    CUBE_FACE_KEYS,
+    CubemapTransformResult,
+    cubemap_to_equirectangular,
+    equirectangular_to_cubemap,
+    forward_geometry,
+    get_active_faces,
+    inverse_geometry,
+)
 from .inpainting import load_sd_pipeline, run_inpaint_inference, unload_sd_pipeline
 from .segmentation import (
     dilate_mask,
@@ -106,9 +114,14 @@ def run_pipeline(config: PipelineConfig) -> None:
     # =========================================================================
     if config.stage in ("all", "inpaint-only"):
         # STAGE 2: CPU Geometry Pre-processing
-        logger.info("--- STAGE 2: Panorama Geometry Pre-processing (Roll & Wrap-Pad) ---")
+        if config.projection == "cubemap":
+            logger.info(f"--- STAGE 2: Panorama Geometry Pre-processing (Cubemap Perspective, face_size={config.cubemap.face_size}) ---")
+        else:
+            logger.info("--- STAGE 2: Panorama Geometry Pre-processing (Roll & Wrap-Pad) ---")
+
         geom_results = {}
         for idx, job in enumerate(pending_jobs, start=1):
+            job.ensure_directories()
             mask_path = job.masks_dir / "final_mask.png"
             if not mask_path.exists():
                 logger.error(f"Missing required mask {mask_path} for {job.image_path.name}. Skipping inpaint.")
@@ -116,20 +129,42 @@ def run_pipeline(config: PipelineConfig) -> None:
 
             orig_img = np.array(Image.open(job.image_path).convert("RGB"))
             mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+            orig_h, orig_w = orig_img.shape[:2]
 
-            result = forward_geometry(orig_img, mask, config.geometry)
-            geom_results[job.image_path] = result
+            if config.projection == "cubemap":
+                face_size = config.cubemap.face_size
+                img_faces = equirectangular_to_cubemap(orig_img, face_size=face_size)
+                mask_faces = equirectangular_to_cubemap(mask, face_size=face_size, is_mask=True)
+                active_faces = get_active_faces(mask_faces, min_mask_pixels=20)
 
-            # Save intermediate outputs
-            cv2.imwrite(
-                str(job.intermediate_dir / "rolled_padded_image.png"),
-                cv2.cvtColor(result.transformed_image, cv2.COLOR_RGB2BGR),
-            )
-            cv2.imwrite(
-                str(job.intermediate_dir / "rolled_padded_mask.png"),
-                result.transformed_mask,
-            )
-            result.save_meta(job.intermediate_dir / "transform_meta.json")
+                cube_dir = job.intermediate_dir / "cubemap"
+                cube_dir.mkdir(parents=True, exist_ok=True)
+                for k in CUBE_FACE_KEYS:
+                    cv2.imwrite(str(cube_dir / f"face_{k}.png"), cv2.cvtColor(img_faces[k], cv2.COLOR_RGB2BGR))
+                    cv2.imwrite(str(cube_dir / f"mask_{k}.png"), mask_faces[k])
+
+                logger.info(f"[{idx}/{len(pending_jobs)}] {job.image_path.name} active faces needing inpainting: {active_faces or 'None'}")
+                geom_results[job.image_path] = CubemapTransformResult(
+                    img_faces=img_faces,
+                    mask_faces=mask_faces,
+                    active_faces=active_faces,
+                    orig_width=orig_w,
+                    orig_height=orig_h,
+                )
+            else:
+                result = forward_geometry(orig_img, mask, config.geometry)
+                geom_results[job.image_path] = result
+
+                # Save intermediate outputs
+                cv2.imwrite(
+                    str(job.intermediate_dir / "rolled_padded_image.png"),
+                    cv2.cvtColor(result.transformed_image, cv2.COLOR_RGB2BGR),
+                )
+                cv2.imwrite(
+                    str(job.intermediate_dir / "rolled_padded_mask.png"),
+                    result.transformed_mask,
+                )
+                result.save_meta(job.intermediate_dir / "transform_meta.json")
 
         # STAGE 3: Stable Diffusion Inpainting (Loaded ONCE in VRAM)
         logger.info("--- STAGE 3: Stable Diffusion Inpainting ---")
@@ -141,22 +176,42 @@ def run_pipeline(config: PipelineConfig) -> None:
                     continue
 
                 geom_res = geom_results[job.image_path]
-                logger.info(f"[{idx}/{len(pending_jobs)}] Inpainting: {job.image_path.name}")
 
-                inpaint_raw = run_inpaint_inference(
-                    pipe=sd_pipe,
-                    image_prepared=geom_res.transformed_image,
-                    mask_prepared=geom_res.transformed_mask,
-                    config=config.sd,
-                )
+                if config.projection == "cubemap":
+                    logger.info(f"[{idx}/{len(pending_jobs)}] Inpainting Cubemap Faces: {job.image_path.name}")
+                    cube_dir = job.intermediate_dir / "cubemap"
+                    for face_key in CUBE_FACE_KEYS:
+                        if face_key in geom_res.active_faces:
+                            logger.info(f"  Inpainting Face {face_key}...")
+                            inpaint_face = run_inpaint_inference(
+                                pipe=sd_pipe,
+                                image_prepared=geom_res.img_faces[face_key],
+                                mask_prepared=geom_res.mask_faces[face_key],
+                                config=config.sd,
+                            )
+                            cv2.imwrite(
+                                str(cube_dir / f"inpaint_{face_key}.png"),
+                                cv2.cvtColor(inpaint_face, cv2.COLOR_RGB2BGR),
+                            )
+                            geom_res.inpainted_faces[face_key] = inpaint_face
+                        else:
+                            geom_res.inpainted_faces[face_key] = geom_res.img_faces[face_key]
+                else:
+                    logger.info(f"[{idx}/{len(pending_jobs)}] Inpainting Equirectangular: {job.image_path.name}")
+                    inpaint_raw = run_inpaint_inference(
+                        pipe=sd_pipe,
+                        image_prepared=geom_res.transformed_image,
+                        mask_prepared=geom_res.transformed_mask,
+                        config=config.sd,
+                    )
 
-                # Save raw inpaint
-                cv2.imwrite(
-                    str(job.intermediate_dir / "inpaint_raw.png"),
-                    cv2.cvtColor(inpaint_raw, cv2.COLOR_RGB2BGR),
-                )
-                # Attach raw inpaint to job for blending stage
-                geom_res.inpaint_raw = inpaint_raw
+                    # Save raw inpaint
+                    cv2.imwrite(
+                        str(job.intermediate_dir / "inpaint_raw.png"),
+                        cv2.cvtColor(inpaint_raw, cv2.COLOR_RGB2BGR),
+                    )
+                    # Attach raw inpaint to job for blending stage
+                    geom_res.inpaint_raw = inpaint_raw
 
         finally:
             # Always ensure SD is freed from GPU memory
@@ -165,15 +220,30 @@ def run_pipeline(config: PipelineConfig) -> None:
         # STAGE 4: CPU Blending & High-Frequency Compositing
         logger.info("--- STAGE 4: Post-Processing & Compositing ---")
         for idx, job in enumerate(pending_jobs, start=1):
-            if job.image_path not in geom_results or not hasattr(geom_results[job.image_path], "inpaint_raw"):
+            if job.image_path not in geom_results:
                 continue
 
             geom_res = geom_results[job.image_path]
             orig_img = np.array(Image.open(job.image_path).convert("RGB"))
             final_mask = cv2.imread(str(job.masks_dir / "final_mask.png"), cv2.IMREAD_GRAYSCALE)
 
-            # Invert geometry (Upsample -> Unpad -> Unroll)
-            restored_inpaint = inverse_geometry(geom_res.inpaint_raw, geom_res.to_dict())
+            if config.projection == "cubemap":
+                if not geom_res.inpainted_faces:
+                    continue
+                restored_inpaint = cubemap_to_equirectangular(
+                    faces=geom_res.inpainted_faces,
+                    out_width=geom_res.orig_width,
+                    out_height=geom_res.orig_height,
+                )
+                cv2.imwrite(
+                    str(job.intermediate_dir / "restored_inpaint_pano.png"),
+                    cv2.cvtColor(restored_inpaint, cv2.COLOR_RGB2BGR),
+                )
+            else:
+                if not hasattr(geom_res, "inpaint_raw"):
+                    continue
+                # Invert geometry (Upsample -> Unpad -> Unroll)
+                restored_inpaint = inverse_geometry(geom_res.inpaint_raw, geom_res.to_dict())
 
             # Alpha composite with original image
             final_composite = composite_panorama(
